@@ -22,6 +22,20 @@
       </div>
 
       <div class="col2">
+        <transition name="fade">
+          <div
+            v-if="hiddenPosts.length"
+            @click="showNewPosts"
+            class="hidden-posts"
+          >
+            <p>
+              Click to show
+              <span class="new-posts">{{ hiddenPosts.length }}</span> new
+              <span v-if="hiddenPosts.length > 1">posts</span>
+              <span v-else>post</span>
+            </p>
+          </div>
+        </transition>
         <div v-if="posts.length">
           <div v-for="post in posts" :key="post.id" class="post">
             <h5>{{ post.userName }}</h5>
@@ -48,6 +62,7 @@
 
 <script>
 import * as fb from '@/firebaseConfig.js'
+import moment from 'moment'
 import { mapState } from 'vuex'
 export default {
   data() {
@@ -74,10 +89,30 @@ export default {
         .catch(err => {
           console.log(err)
         })
+    },
+    showNewPosts() {
+      let updatedPostsArray = this.hiddenPosts.concat(this.posts)
+      this.$store.commit('SET_HIDDEN_POSTS', null)
+      this.$store.commit('SET_POSTS', updatedPostsArray)
+    }
+  },
+  filters: {
+    formatDate(postDate) {
+      if (!postDate) {
+        return '-'
+      }
+      let date = postDate.toDate()
+      return moment(date).fromNow()
+    },
+    trimLength(postContent) {
+      if (postContent.length < 200) {
+        return postContent
+      }
+      return `${postContent.substring(0, 200)}`
     }
   },
   computed: {
-    ...mapState(['userProfile', 'currentUser', 'posts'])
+    ...mapState(['userProfile', 'currentUser', 'posts', 'hiddenPosts'])
   }
 }
 </script>

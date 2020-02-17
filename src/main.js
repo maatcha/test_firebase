@@ -18,14 +18,32 @@ fb.auth.onAuthStateChanged(user => {
     fb.postsCollection
       .orderBy('createdOn', 'desc')
       .onSnapshot(querySnapshot => {
-        let postsArray = []
-        querySnapshot.forEach(doc => {
-          let post = doc.data()
-          post.id = doc.id
-          postsArray.push(post)
-        })
+        let createdByCurrentUser
+        if (querySnapshot.docs.length) {
+          createdByCurrentUser =
+            store.state.currentUser.uid ===
+            querySnapshot.docChanges()[0].doc.data().userId
+              ? true
+              : false
+        }
+        if (
+          querySnapshot.docChanges().length !== querySnapshot.docs.length &&
+          querySnapshot.docChanges()[0].type === 'added' &&
+          !createdByCurrentUser
+        ) {
+          let post = querySnapshot.docChanges()[0].doc.data()
+          post.id = querySnapshot.docChanges()[0].doc.id
+          store.commit('SET_HIDDEN_POSTS', post)
+        } else {
+          let postsArray = []
+          querySnapshot.forEach(doc => {
+            let post = doc.data()
+            post.id = doc.id
+            postsArray.push(post)
+          })
 
-        store.commit('SET_POSTS', postsArray)
+          store.commit('SET_POSTS', postsArray)
+        }
       })
   }
 

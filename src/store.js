@@ -8,11 +8,25 @@ export default new Vuex.Store({
   state: {
     currentUser: null,
     userProfile: {},
-    posts: []
+    posts: [],
+    hiddenPosts: []
   },
   mutations: {
     SET_POSTS(state, posts) {
-      state.posts = posts
+      if (posts) {
+        state.posts = posts
+      } else {
+        state.posts = []
+      }
+    },
+    SET_HIDDEN_POSTS(state, post) {
+      if (post) {
+        if (!state.hiddenPosts.some(x => x.id === post.id)) {
+          state.hiddenPosts.unshift(post)
+        }
+      } else {
+        state.hiddenPosts = []
+      }
     },
     SET_CURRENT_USER(state, currentUser) {
       // console.log(currentUser)
