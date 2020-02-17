@@ -8,7 +8,7 @@
           <div class="create-post">
             <p>Create a post</p>
             <form @submit.prevent>
-              <textarea v-model="post.content"></textarea>
+              <textarea v-model.trim="post.content"></textarea>
               <button
                 @click="createPost"
                 :disabled="post.content === ''"
@@ -43,10 +43,14 @@
             <p>{{ post.content | trimLength }}</p>
             <ul>
               <li>
-                <a>comments {{ post.comments }}</a>
+                <a @click="openCommentModal(post)"
+                  >comments {{ post.comments }}</a
+                >
               </li>
               <li>
-                <a>likes {{ post.likes }}</a>
+                <a @click="likePost(post.id, post.likes)"
+                  >likes {{ post.likes }}</a
+                >
               </li>
               <li><a>view full post</a></li>
             </ul>
@@ -57,6 +61,24 @@
         </div>
       </div>
     </section>
+    <transition name="fade">
+      <div v-if="showCommentModal" class="c-modal">
+        <div class="c-container">
+          <a @click="closeCommentModal">X</a>
+          <p>add a comment</p>
+          <form @submit.prevent>
+            <textarea v-model.trim="comment.content"></textarea>
+            <button
+              @click="addComment"
+              :disabled="comment.content == ''"
+              class="button"
+            >
+              add comment
+            </button>
+          </form>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -69,7 +91,14 @@ export default {
     return {
       post: {
         content: ''
-      }
+      },
+      comment: {
+        postId: '',
+        userId: '',
+        content: '',
+        postComments: 0
+      },
+      showCommentModal: false
     }
   },
   methods: {
@@ -94,6 +123,70 @@ export default {
       let updatedPostsArray = this.hiddenPosts.concat(this.posts)
       this.$store.commit('SET_HIDDEN_POSTS', null)
       this.$store.commit('SET_POSTS', updatedPostsArray)
+    },
+    openCommentModal(post) {
+      this.comment.postId = post.id
+      this.comment.userId = post.userId
+      this.comment.postComments = post.comments
+      this.showCommentModal = true
+    },
+    closeCommentModal() {
+      this.comment.postId = ''
+      this.comment.userId = ''
+      this.comment.content = ''
+      this.showCommentModal = false
+    },
+    addComment() {
+      let postId = this.comment.postId
+      let postComments = this.comment.postComments
+
+      fb.commentsCollection
+        .add({
+          createdOn: new Date(),
+          content: this.comment.content,
+          postId: postId,
+          userId: this.currentUser.uid,
+          userName: this.userProfile.name
+        })
+        .then(() => {
+          fb.postsCollection
+            .doc(postId)
+            .update({
+              comments: postComments + 1
+            })
+            .then(() => {
+              this.closeCommentModal()
+            })
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    likePost(postId, postLikes) {
+      let docId = `${this.currentUser.uid}_${postId}`
+      fb.likesCollection
+        .doc(docId)
+        .get()
+        .then(doc => {
+          console.log(doc)
+          if (doc.exists) {
+            return
+          }
+          fb.likesCollection
+            .doc(docId)
+            .set({
+              postId: postId,
+              userId: this.currentUser.uid
+            })
+            .then(() => {
+              fb.postsCollection.doc(postId).update({
+                likes: postLikes + 1
+              })
+            })
+        })
+        .catch(err => {
+          console.log(err)
+        })
     }
   },
   filters: {
