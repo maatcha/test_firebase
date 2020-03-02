@@ -33,7 +33,7 @@ export default new Vuex.Store({
       state.currentUser = currentUser
     },
     SET_USER_PROFILE(state, userProfile) {
-      console.log(userProfile)
+      // console.log(userProfile)
       state.userProfile = userProfile
     }
   },
@@ -49,6 +49,39 @@ export default new Vuex.Store({
         .get()
         .then(res => {
           commit('SET_USER_PROFILE', res.data())
+        })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    updateProfile({ state }, data) {
+      let name = data.name
+      let title = data.title
+
+      fb.usersCollection
+        .doc(state.currentUser.uid)
+        .update({ name, title })
+        .then(() => {
+          fb.postsCollection
+            .where('userId', '==', state.currentUser.uid)
+            .get()
+            .then(docs => {
+              docs.forEach(doc => {
+                fb.postsCollection.doc(doc.id).update({
+                  userName: name
+                })
+              })
+            })
+          fb.commentsCollection
+            .where('userId', '==', state.currentUser.uid)
+            .get()
+            .then(docs => {
+              docs.forEach(doc => {
+                fb.commentsCollection.doc(doc.id).update({
+                  userName: name
+                })
+              })
+            })
         })
         .catch(err => {
           console.log(err)
