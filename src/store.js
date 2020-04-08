@@ -1,10 +1,12 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import * as fb from './firebaseConfig.js'
+import { postSnapshotRefresh } from './utils'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
+  plugins: [postSnapshotRefresh],
   state: {
     currentUser: null,
     userProfile: {},
